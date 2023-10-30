@@ -1,0 +1,96 @@
+version: '3'
+
+services:
+  prometheus:
+    image: prom/prometheus:v2.36.2
+    hostname: prometheus
+    container_name: prometheus
+    volumes:
+      - ./prometheus/:/etc/prometheus/
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    ports:
+      - 9090:9090
+    restart: always
+    networks:
+      - oncall
+
+  blackbox:
+    image: prom/blackbox-exporter:latest
+    container_name: blackbox
+    privileged: true
+    volumes:
+      - ./blackbox.yml:/etc/blackbox_exporter/config.yml
+    ports:
+      - '9115:9115'
+    networks:
+      - oncall
+
+  # cadvisor:
+  #   image: gcr.io/cadvisor/cadvisor
+  #   container_name: cadvisor
+  #   volumes:
+  #     - /:/rootfs:ro
+  #     - /var/run:/var/run:rw
+  #     - /sys:/sys:ro
+  #     - /var/lib/docker/:/var/lib/docker:ro
+  #   ports:
+  #     - 8081:8080
+  #   networks:
+  #     - oncall
+  #   extra_hosts:
+  #     - "host.docker.internal:host-gateway"
+  #   restart: always
+ 
+  # victoriametrics:
+  #   container_name: victoriametrics
+  #   image: victoriametrics/victoria-metrics:v1.93.4
+  #   ports:
+  #     - 8428:8428
+  #     - 8089:8089
+  #     - 8089:8089/udp
+  #     - 2003:2003
+  #     - 2003:2003/udp
+  #     - 4242:4242
+  #   volumes:
+  #     - vmdata:/storage
+  #   command:
+  #     - "--storageDataPath=/storage"
+  #     - "--opentsdbListenAddr=:4242"
+  #     - "--httpListenAddr=:8428"
+  #   networks:
+  #     - iris
+  #   restart: always
+
+  # node_exporter:
+  #   image: quay.io/prometheus/node-exporter:latest
+  #   container_name: node_exporter
+  #   privileged: true
+  #   volumes:
+  #     - '/:/host:ro,rslave'
+  #     - ./node_exporter:/etc/node_exporter
+  #     - /home/metrics:/var/lib/node_exporter/textfile_collector
+  #   command:
+  #     - '--path.rootfs=/host'
+  #     #- '--collector.disable-defaults'
+  #     - --no-collector.powersupplyclass
+  #     - '--collector.textfile.directory=/var/lib/node_exporter/textfile_collector'
+
+  #   networks:
+  #    - iris
+  #   ports:
+  #    - "9100:9100"
+  #   pid: host
+  #   restart: unless-stopped
+
+volumes:
+    prometheus_data: {}
+
+networks:
+  oncall:
+    external:
+      name: oncall

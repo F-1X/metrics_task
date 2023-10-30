@@ -1,0 +1,88 @@
+global:
+  scrape_interval: 10s
+
+scrape_configs:
+  # - job_name: "oncall-web"
+  #   static_configs:
+  #     - targets: 
+  #       - "oncall-web:8080"
+  #       - 'prometheus:9090'
+  
+  # - job_name: cadvisor
+  #   scrape_interval: 5s
+  #   static_configs:
+  #   - targets:
+  #     - cadvisor:8080
+
+  - job_name: "custom_exporter"
+    scrape_interval: 3s
+    metrics_path: /
+    static_configs:
+      - targets:
+        - custom_exporter:9099
+
+  - job_name: "custom_metrics"
+    scrape_interval: 3s
+    metrics_path: /custom_metrics
+    static_configs:
+      - targets:
+        - oncall-web:8080
+
+  - job_name: 'blackbox_http'
+    metrics_path: /probe
+    params:
+      module: 
+        - http_2xx
+        - http_post_2xx
+        - http_get_2xx
+    static_configs:
+      - targets:
+        - 'oncall-web:8080'
+    relabel_configs:
+    - source_labels: [__address__]
+      target_label: __param_target
+    - source_labels: [__param_target]
+      target_label: instance
+    - target_label: __address__
+      replacement: blackbox:9115
+
+
+  # - job_name: 'blackbox_tcp'
+  #   metrics_path: /probe
+  #   params:
+  #     module: 
+  #       - tcp_connect
+  #   static_configs:
+  #     - targets:
+  #       - 'oncall-web:8080'
+  #   relabel_configs:
+  #   - source_labels: [__address__]
+  #     target_label: __param_target
+  #   - source_labels: [__param_target]
+  #     target_label: instance
+  #   - target_label: __address__
+  #     replacement: blackbox:9115
+
+  # - job_name: 'blackbox_icmp'
+  #   metrics_path: /probe
+  #   params:
+  #     module: 
+  #       - icmp_ttl5
+  #   static_configs:
+  #     - targets:
+  #       - 'oncall'
+  #   relabel_configs:
+  #   - source_labels: [__address__]
+  #     target_label: __param_target
+  #   - source_labels: [__param_target]
+  #     target_label: instance
+  #   - target_label: __address__
+  #     replacement: blackbox:9115
+    
+  # - job_name: "oncall_file_json"
+  #   file_sd_configs:
+  #     - files:
+  #         - ./target.json
+
+
+
