@@ -1,0 +1,96 @@
+# filebeat.autodiscover:
+#   providers:
+#     - type: docker
+#       #hints.enabled: true
+#       templates:
+#         - condition:
+#             equals:
+#               docker.container.labels.my_custom_label: "oncall-web"
+#           config:
+#             - type: container
+#               containers.ids:
+#                 - "${data.docker.container.id}"
+#               paths:
+#                 - "/var/lib/docker/containers/${data.docker.container.id}/*.log"
+#               fields:
+#                 event.dataset: "${data.docker.container.image}"
+#               fields_under_root: true
+
+
+# Это не надо если подключен модуль
+# filebeat.inputs:
+# - type: log
+#   enabled: true
+#   paths:
+#     - /app/nginx/access.log
+#     - /app/nginx/error.log
+#   fields:
+#     document_type: nginx_access
+# - type: log
+#   enabled: true
+#   paths:
+#     - /app/mysql
+#   fields:
+#     document_type: mysql-general
+
+
+
+filebeat.modules:
+- module: nginx
+  access:
+    enabled: true
+    var.paths: ["/app/nginx/access.log"]
+  error:
+    enabled: false
+    var.paths: ["/app/nginx/error.log"]
+    
+# - module: mysql
+#   error:
+#     enabled: true
+#     var.paths: ["/app/mysql/general.log*"]
+
+processors:
+  - dissect:
+      tokenizer: "%{IP} - - - - [%{timestamp}] \"%{method} %{url} HTTP/%{http_version}\" %{STATUS_CODE} %{bytes} %{duration} \"%{http_host}\" \"%{useragent}\" \"%{some-stuff}\""
+      field: "message"
+      target_prefix: "filebeat_processor"
+  - drop_fields:
+      fields: ["agent", "container", "ecs", "log", "input", "docker", "host","timezone"]
+      ignore_missing: true
+
+  - rename:
+      fields:
+      - from: "event.module"
+        to: "filebeat_processor.module"
+      - from: "event.dataset"
+        to: "filebeat_processor.dataset"
+      - from: "fileset.name"
+        to: "filebeat_processor.fileset_name"
+      - from: "service.type"
+        to: "filebeat_processor.service"
+      ignore_missing: true
+      
+  - if:
+      regexp:
+        filebeat_processor.useragent: ".*Mozilla.*"
+    then:
+      - add_fields:
+          target: "filebeat_processor"
+          fields:
+            Mozilla: "true"
+
+  - drop_fields:
+      fields: ["event", "fileset", "service"]
+  
+  - add_tags:
+      tags: [some_tag]
+      target: "new_target"
+
+      
+# output.console:
+#   pretty: true
+
+
+output.logstash:
+  hosts: ["logstash:5044"]
+

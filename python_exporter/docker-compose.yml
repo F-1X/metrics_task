@@ -1,0 +1,19 @@
+version: '3'
+
+services:
+  custom_exporter:
+    env_file:
+        - .env
+    build: .
+    hostname: custom_exporter
+    ports:
+      - ${PORT_ONCALL}:${PORT_ONCALL} 
+    restart: always
+
+    networks:
+      - oncall
+
+networks:
+  oncall:
+    external:
+      name: oncall

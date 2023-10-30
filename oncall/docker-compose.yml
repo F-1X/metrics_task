@@ -1,0 +1,47 @@
+version: '3'
+
+services:
+  oncall-web:
+    build: .
+    hostname: oncall-web
+    container_name: oncall-web
+    ports:
+      - "8080:8080"
+    environment:
+      - DOCKER_DB_BOOTSTRAP=1
+      - IRIS_API_HOST=iris
+    volumes:
+      - ./configs/config.docker.yaml:/home/oncall/config/config.yaml
+      - oncall_nginx:/home/oncall/var/log/nginx
+    labels:
+      - "my_custom_label=oncall-web"
+    networks:
+      - oncall
+
+  oncall-mysql:
+    container_name: oncall-mysql
+    hostname: oncall-mysql
+    image: mysql:5.7
+    environment:
+      - MYSQL_ROOT_PASSWORD=1234
+    ports:
+      - "3306:3306"
+    labels:
+      - "my_custom_label=oncall-mysql"
+    networks:
+      - oncall
+    volumes:
+      - oncall_mysql:/var/log/mysql
+      - ./my.cnf:/etc/mysql/my.cnf
+
+    command: bash -c "touch /var/log/mysql/general.log && chmod 644 /var/log/mysql/general.log && docker-entrypoint.sh mysqld"
+
+networks:
+  oncall:
+    name: oncall
+
+volumes:
+  oncall_nginx:
+    name: oncall_nginx
+  oncall_mysql:
+    name: oncall_mysql

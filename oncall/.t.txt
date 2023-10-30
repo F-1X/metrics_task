@@ -1,0 +1,1 @@
+alias docker-rebuild2='sudo docker-compose stop ; sudo docker-compose rm ; sudo docker-compose build ; sudo docker-compose up'
